@@ -1,42 +1,295 @@
+/* CineVibe Dark UI - Neon Effects & Animations */
+
 #root {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 0;
+  text-align: left;
+}
+
+/* Neon Glow Classes */
+.neon-glow-purple {
+  box-shadow: var(--glow-purple);
+  transition: all 0.3s ease;
+}
+
+.neon-glow-blue {
+  box-shadow: var(--glow-blue);
+  transition: all 0.3s ease;
+}
+
+.neon-glow-gold {
+  box-shadow: var(--glow-gold);
+  transition: all 0.3s ease;
+}
+
+.neon-border-purple {
+  border: 2px solid var(--neon-purple) !important;
+  box-shadow: var(--glow-purple);
+}
+
+.neon-border-blue {
+  border: 2px solid var(--neon-blue) !important;
+  box-shadow: var(--glow-blue);
+}
+
+.neon-text {
+  color: var(--neon-purple);
+  text-shadow: 0 0 10px rgba(127, 90, 240, 0.8);
+  font-weight: 600;
+}
+
+/* Glassmorphism Effect */
+.glass-panel {
+  background: rgba(35, 35, 41, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(127, 90, 240, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: var(--neon-purple);
+  box-shadow: var(--glow-purple);
+  transform: translateY(-4px);
+}
+
+/* Movie Card Enhancements */
+.movie-card {
+  background: var(--surface-light);
+  border: 1px solid var(--surface-steel);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.movie-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(127, 90, 240, 0.05), rgba(0, 159, 253, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.movie-card:hover::before {
+  opacity: 1;
+}
+
+.movie-card:hover {
+  border-color: var(--neon-purple);
+  box-shadow: var(--glow-purple);
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Mood Board Overlay */
+.mood-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.3;
+  background: radial-gradient(circle at 50% 50%, 
+    rgba(127, 90, 240, 0.1) 0%, 
+    transparent 50%);
+  animation: pulse-glow 8s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+/* Animated Gradient Background */
+.gradient-bg {
+  background: linear-gradient(
+    135deg,
+    var(--bg-primary) 0%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Neon Progress/Status Bar */
+.neon-progress {
+  height: 6px;
+  background: var(--surface-steel);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.neon-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
+  box-shadow: 0 0 12px 2px rgba(127, 90, 240, 0.8);
+  animation: pulse-bar 2s ease-in-out infinite;
+  transition: width 0.3s ease;
+}
+
+@keyframes pulse-bar {
+  0%, 100% {
+    box-shadow: 0 0 12px 2px rgba(127, 90, 240, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(127, 90, 240, 1);
+  }
+}
+
+/* Color Selector Enhancements */
+.color-selector {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.color-selector:hover {
+  transform: scale(1.15);
+}
+
+.color-selector.selected {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 16px 4px currentColor;
+  animation: pulse-select 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-select {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Chip/Tag Enhancements */
+.mood-chip {
+  transition: all 0.3s ease;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.mood-chip:hover {
+  transform: translateY(-2px);
+}
+
+.mood-chip.selected {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue)) !important;
+  border: none !important;
+  box-shadow: var(--glow-purple);
+  color: var(--text-primary) !important;
+}
+
+/* Page Transitions */
+.page-fade-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
+/* Header Neon Effect */
+.neon-header {
+  color: var(--text-primary);
+  text-shadow: 0 0 20px rgba(127, 90, 240, 0.6);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Cinematic Container */
+.cinematic-container {
+  position: relative;
+  z-index: 1;
   padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Scroll Effects */
+.smooth-scroll {
+  scroll-behavior: smooth;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Loading Shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
   }
-  to {
-    transform: rotate(360deg);
+  100% {
+    background-position: 1000px 0;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-light) 0%,
+    var(--surface-steel) 50%,
+    var(--surface-light) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Hover Glow for Interactive Elements */
+.interactive-glow:hover {
+  box-shadow: 0 0 20px 5px rgba(127, 90, 240, 0.5);
+  border-color: var(--neon-purple);
+}
+
+/* Neon Divider */
+.neon-divider {
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--neon-purple) 50%, 
+    transparent 100%);
+  box-shadow: 0 0 8px 1px rgba(127, 90, 240, 0.6);
+  border: none;
+  margin: 2rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cinematic-container {
+    padding: 1rem;
+  }
+  
+  h1 {
+    font-size: 2em;
   }
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
