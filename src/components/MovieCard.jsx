@@ -1,6 +1,34 @@
+import { useState, useEffect } from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 
-export default function MovieCard({ movie, showScore = false }) {
+export default function MovieCard({ movie, showScore = false, onClick }) {
+  const [imageError, setImageError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(movie.poster);
+
+  // Reset image state when movie changes
+  useEffect(() => {
+    setImageError(false);
+    setImageSrc(movie.poster);
+  }, [movie.poster]);
+
+  const handleImageError = () => {
+    if (!imageError) {
+      setImageError(true);
+      // Try alternative: use w300 size instead of w500, or placeholder
+      const originalUrl = movie.poster;
+      if (originalUrl && originalUrl.includes('/w500/')) {
+        // Try smaller size
+        const smallerUrl = originalUrl.replace('/w500/', '/w300/');
+        setImageSrc(smallerUrl);
+      } else {
+        // Use placeholder as final fallback
+        setImageSrc(`https://via.placeholder.com/500x750/232329/7f5af0?text=${encodeURIComponent(movie.title.substring(0, 20))}`);
+      }
+    } else {
+      // If already tried fallback, use placeholder
+      setImageSrc(`https://via.placeholder.com/500x750/232329/7f5af0?text=${encodeURIComponent(movie.title.substring(0, 20))}`);
+    }
+  };
   const cardStyle = {
     background: 'linear-gradient(135deg, rgba(35, 35, 41, 0.9), rgba(26, 26, 36, 0.9))',
     border: '1px solid var(--surface-steel)',
@@ -53,17 +81,35 @@ export default function MovieCard({ movie, showScore = false }) {
     transition: 'all 0.3s ease',
   };
 
+  const handleClick = () => {
+    if (onClick) onClick(movie);
+  };
+
+  const handleKeyDown = (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && onClick) {
+      e.preventDefault();
+      onClick(movie);
+    }
+  };
+
   return (
     <Card 
       className="movie-card h-100" 
       style={cardStyle}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={onClick ? 0 : -1}
+      role={onClick ? "button" : undefined}
+      aria-label={onClick ? `View details for ${movie.title}` : undefined}
     >
       <Row className="g-0 h-100">
         <Col xs="auto">
           <Card.Img
-            src={movie.poster}
-            alt={movie.title}
+            src={imageSrc}
+            alt={`${movie.title} movie poster`}
             style={posterStyle}
+            loading="lazy"
+            onError={handleImageError}
           />
         </Col>
         <Col>
@@ -72,9 +118,11 @@ export default function MovieCard({ movie, showScore = false }) {
               <Card.Title style={titleStyle} className="mb-0">
                 {movie.title}
               </Card.Title>
-              {showScore && movie._score !== undefined && (
-                <div style={scoreStyle}>
-                  {movie._score.toFixed(2)}
+              {showScore && (movie._score !== undefined || movie._similarity !== undefined) && (
+                <div style={scoreStyle} title={`Match: ${(movie._similarity * 100 || movie._score || 0).toFixed(1)}%`}>
+                  {movie._score !== undefined 
+                    ? movie._score.toFixed(1) 
+                    : (movie._similarity * 100).toFixed(1)}%
                 </div>
               )}
             </div>

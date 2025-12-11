@@ -2,15 +2,42 @@ import { useMemo, useState, useEffect } from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import MoodControls from "./MoodControls.jsx";
 import MovieCard from "./MovieCard.jsx";
+import MovieDetail from "./MovieDetail.jsx";
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import { MOVIES, DATASET_INFO } from "../data/movies.js";
-import { rankByMood, DEFAULT_MOOD } from "../lib/recommend.js";
+import { DEFAULT_MOOD } from "../lib/recommend.js";
+import { getRecommendationsKnnSync } from "../lib/recommendKnn.js";
 
 export default function Home() {
   const [mood, setMood] = useState(DEFAULT_MOOD);
   const [gradientColors, setGradientColors] = useState(['#7f5af0', '#009ffd']);
-  const [showIntro, setShowIntro] = useState(true);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [useKnn, setUseKnn] = useState(true); // Toggle between KNN and old algorithm
+  const [kValue, setKValue] = useState(5); // Number of recommendations
 
-  const ranked = useMemo(() => rankByMood(MOVIES, mood), [mood]);
+  // Use KNN algorithm for recommendations
+  const ranked = useMemo(() => {
+    if (!useKnn) {
+      // Fallback to old algorithm if needed
+      const { rankByMood } = require("../lib/recommend.js");
+      return rankByMood(MOVIES, mood);
+    }
+    
+    try {
+      setError(null);
+      // Use synchronous KNN for immediate updates
+      const recommendations = getRecommendationsKnnSync(mood, MOVIES, kValue, 'euclidean');
+      return recommendations;
+    } catch (err) {
+      console.error('KNN Error:', err);
+      setError(err.message);
+      // Fallback to empty array on error
+      return [];
+    }
+  }, [mood, useKnn, kValue]);
 
   // Update gradient based on selected colors
   useEffect(() => {
@@ -21,13 +48,6 @@ export default function Home() {
       setGradientColors(['#7f5af0', '#009ffd']);
     }
   }, [mood.colors]);
-
-  // Hide intro once user starts interacting
-  useEffect(() => {
-    if (mood.colors.size > 0 || mood.descriptors.size > 0) {
-      setShowIntro(false);
-    }
-  }, [mood.colors.size, mood.descriptors.size]);
 
   const overlayStyle = {
     position: 'fixed',
@@ -194,18 +214,65 @@ export default function Home() {
     border: '2px dashed rgba(127, 90, 240, 0.3)',
   };
 
+  // Preset mood configurations
+  const applyPreset = (presetName) => {
+    let newMood;
+    
+    switch(presetName) {
+      case 'orange-cozy':
+        newMood = {
+          colors: new Set(['#F59E0B']), // Orange
+          descriptors: new Set(['cozy']),
+          intensity: 0.2, // Low intensity
+          pacing: 0.5, // Default pacing
+        };
+        break;
+      case 'blue-mysterious':
+        newMood = {
+          colors: new Set(['#60A5FA']), // Blue
+          descriptors: new Set(['mysterious']),
+          intensity: 0.5, // Default intensity
+          pacing: 0.8, // High pacing
+        };
+        break;
+      case 'purple-surreal':
+        newMood = {
+          colors: new Set(['#A78BFA']), // Purple
+          descriptors: new Set(['surreal']),
+          intensity: 0.5, // Medium intensity
+          pacing: 0.5, // Default pacing
+        };
+        break;
+      default:
+        return;
+    }
+    
+    setMood(newMood);
+  };
+
   const exampleMoodStyle = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.5rem',
-    padding: '0.5rem 1rem',
+    padding: '0.75rem 1.25rem',
     background: 'rgba(127, 90, 240, 0.2)',
-    border: '1px solid rgba(127, 90, 240, 0.4)',
+    border: '2px solid rgba(127, 90, 240, 0.4)',
     borderRadius: '20px',
     color: 'var(--neon-purple)',
     fontSize: '0.9rem',
     fontWeight: '500',
     margin: '0.5rem',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    userSelect: 'none',
+  };
+
+  const exampleMoodHoverStyle = {
+    ...exampleMoodStyle,
+    background: 'rgba(127, 90, 240, 0.3)',
+    borderColor: 'var(--neon-purple)',
+    boxShadow: '0 0 16px 4px rgba(127, 90, 240, 0.4)',
+    transform: 'translateY(-2px)',
   };
 
   return (
@@ -243,17 +310,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Instructions - Show only on first visit */}
-        {showIntro && (
-          <Card style={introCardStyle} className="glass-panel">
-            <h3 style={{ 
+        {/* Instructions - Always visible */}
+        <Card style={introCardStyle} className="glass-panel">
+            <h2 style={{ 
               ...sectionTitleStyle, 
               marginTop: 0, 
               marginBottom: '2rem',
               fontSize: '1.3rem' 
             }}>
               ✨ How It Works
-            </h3>
+            </h2>
 
             <Row>
               <Col md={6}>
@@ -324,14 +390,73 @@ export default function Home() {
               }}>
                 💡 Try these mood combinations:
               </div>
-              <div>
-                <span style={exampleMoodStyle}>🟠 Orange + Cozy + Low Intensity</span>
-                <span style={exampleMoodStyle}>🔵 Blue + Mysterious + High Pacing</span>
-                <span style={exampleMoodStyle}>🟣 Purple + Surreal + Medium Intensity</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('orange-cozy')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      applyPreset('orange-cozy');
+                    }
+                  }}
+                  style={exampleMoodStyle}
+                  onMouseEnter={(e) => {
+                    Object.assign(e.target.style, exampleMoodHoverStyle);
+                  }}
+                  onMouseLeave={(e) => {
+                    Object.assign(e.target.style, exampleMoodStyle);
+                  }}
+                  aria-label="Apply preset: Orange color, Cozy vibe, Low intensity"
+                  title="Click to apply this mood preset"
+                >
+                  🟠 Orange + Cozy + Low Intensity
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('blue-mysterious')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      applyPreset('blue-mysterious');
+                    }
+                  }}
+                  style={exampleMoodStyle}
+                  onMouseEnter={(e) => {
+                    Object.assign(e.target.style, exampleMoodHoverStyle);
+                  }}
+                  onMouseLeave={(e) => {
+                    Object.assign(e.target.style, exampleMoodStyle);
+                  }}
+                  aria-label="Apply preset: Blue color, Mysterious vibe, High pacing"
+                  title="Click to apply this mood preset"
+                >
+                  🔵 Blue + Mysterious + High Pacing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('purple-surreal')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      applyPreset('purple-surreal');
+                    }
+                  }}
+                  style={exampleMoodStyle}
+                  onMouseEnter={(e) => {
+                    Object.assign(e.target.style, exampleMoodHoverStyle);
+                  }}
+                  onMouseLeave={(e) => {
+                    Object.assign(e.target.style, exampleMoodStyle);
+                  }}
+                  aria-label="Apply preset: Purple color, Surreal vibe, Medium intensity"
+                  title="Click to apply this mood preset"
+                >
+                  🟣 Purple + Surreal + Medium Intensity
+                </button>
               </div>
             </div>
           </Card>
-        )}
 
         {/* Mood Board Controls */}
         <h2 style={sectionTitleStyle}>
@@ -345,20 +470,62 @@ export default function Home() {
         {/* Progress Indicator */}
         <div style={progressBarStyle} className="neon-progress">
           <div style={progressFillStyle} className="neon-progress-bar"></div>
-        </div>
+          </div>
 
         {/* Results Section */}
         <h2 style={sectionTitleStyle}>
           {ranked.length > 0 ? `🎯 Your Top ${ranked.length} Matches` : '🎯 Your Personalized Recommendations'}
         </h2>
+
+        {/* Error Display */}
+        {error && (
+          <div style={{
+            background: 'rgba(215, 38, 61, 0.2)',
+            border: '2px solid var(--neon-crimson)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: 'var(--neon-crimson)',
+          }}>
+            <strong>⚠️ Error:</strong> {error}
+            <button
+              onClick={() => setError(null)}
+              style={{
+                marginLeft: '1rem',
+                padding: '0.25rem 0.75rem',
+                background: 'var(--neon-crimson)',
+                border: 'none',
+                borderRadius: '6px',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+        
+        {/* Loading State */}
+        {isLoading && (
+          <div style={{ marginBottom: '2rem' }}>
+            <LoadingSpinner message="Finding your perfect cinematic matches..." />
+          </div>
+        )}
         
         <Row className="g-4">
-          {ranked.map((movie) => (
+          {!isLoading && ranked.map((movie) => (
             <Col key={movie.id} sm={12} md={6}>
-              <MovieCard movie={movie} showScore={true} />
+              <MovieCard 
+                movie={movie} 
+                showScore={true} 
+                onClick={(m) => {
+                  setSelectedMovie(m);
+                  setShowDetail(true);
+                }}
+              />
             </Col>
-          ))}
-          {ranked.length === 0 && (
+        ))}
+          {!isLoading && ranked.length === 0 && (
             <Col>
               <div style={emptyStateStyle}>
                 <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
@@ -386,8 +553,8 @@ export default function Home() {
                   fontWeight: '500'
                 }}>
                   👆 Begin by clicking colors or vibes in the mood board above
-                </div>
-              </div>
+      </div>
+    </div>
             </Col>
           )}
         </Row>
@@ -412,6 +579,15 @@ export default function Home() {
             </p>
           </div>
         )}
+
+        <MovieDetail 
+          movie={selectedMovie} 
+          show={showDetail} 
+          onHide={() => {
+            setShowDetail(false);
+            setSelectedMovie(null);
+          }} 
+        />
       </Container>
     </>
   );

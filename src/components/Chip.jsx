@@ -20,13 +20,23 @@ export default function Chip({ label, selected, onClick }) {
     letterSpacing: '0.02em',
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className="mood-chip"
       style={chipStyle}
       aria-pressed={selected}
+      aria-label={`${selected ? 'Deselect' : 'Select'} ${label} mood`}
+      tabIndex={0}
     >
       {label}
     </button>

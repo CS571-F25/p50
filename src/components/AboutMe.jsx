@@ -125,9 +125,9 @@ export default function AboutMe() {
           <Col md={4}>
             <Card style={featureCardStyle} className="glass-panel">
               <div style={featureIconStyle}>🎬</div>
-              <h4 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
+              <h2 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
                 Mood-Driven
-              </h4>
+              </h2>
               <p style={{ ...cardTextStyle, fontSize: '0.9rem' }}>
                 Express emotions through visual elements instead of rigid categories
               </p>
@@ -136,9 +136,9 @@ export default function AboutMe() {
           <Col md={4}>
             <Card style={featureCardStyle} className="glass-panel">
               <div style={featureIconStyle}>⚡</div>
-              <h4 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
+              <h2 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
                 Real-Time
-              </h4>
+              </h2>
               <p style={{ ...cardTextStyle, fontSize: '0.9rem' }}>
                 Instant recommendations that adapt as you refine your mood
               </p>
@@ -147,9 +147,9 @@ export default function AboutMe() {
           <Col md={4}>
             <Card style={featureCardStyle} className="glass-panel">
               <div style={featureIconStyle}>✨</div>
-              <h4 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
+              <h2 style={{ ...cardHeaderStyle, fontSize: '1.2rem' }}>
                 Immersive
-              </h4>
+              </h2>
               <p style={{ ...cardTextStyle, fontSize: '0.9rem' }}>
                 Cinematic UI that makes discovery an experience in itself
               </p>

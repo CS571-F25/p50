@@ -125,7 +125,7 @@ button:focus-visible {
   background-color: var(--surface-light) !important;
   border-color: var(--surface-steel) !important;
   color: var(--text-primary) !important;
-}
+  }
 
 .form-label {
   color: var(--text-primary) !important;

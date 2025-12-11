@@ -1,8 +1,37 @@
+import { useState, useMemo } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { MOVIES, DATASET_INFO } from '../data/movies.js';
 import MovieCard from './MovieCard.jsx';
+import MovieDetail from './MovieDetail.jsx';
+import SearchBar from './SearchBar.jsx';
 
 export default function Browse() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+
+  const filteredMovies = useMemo(() => {
+    if (!searchTerm.trim()) return MOVIES;
+    const term = searchTerm.toLowerCase();
+    return MOVIES.filter(movie => 
+      movie.title.toLowerCase().includes(term) ||
+      movie.tags.some(tag => tag.toLowerCase().includes(term))
+    );
+  }, [searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
+  const handleMovieClick = (movie) => {
+    setSelectedMovie(movie);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedMovie(null);
+  };
   const overlayStyle = {
     position: 'fixed',
     top: 0,
@@ -71,18 +100,46 @@ export default function Browse() {
         </p>
 
         <div style={statsStyle}>
-          📽️ {MOVIES.length} Films Available • {DATASET_INFO.moodCategories.length} Mood Categories
+          📽️ {filteredMovies.length} {filteredMovies.length === MOVIES.length ? 'Films' : 'Results'} Available • {DATASET_INFO.moodCategories.length} Mood Categories
+        </div>
+
+        <div style={{ marginBottom: '2rem', maxWidth: '600px' }}>
+          <SearchBar onSearch={handleSearch} placeholder="Search by title or mood..." />
         </div>
 
         <hr style={dividerStyle} />
 
-        <Row className="g-4">
-          {MOVIES.map((movie) => (
-            <Col key={movie.id} sm={12} md={6} lg={4}>
-              <MovieCard movie={movie} showScore={false} />
-            </Col>
-          ))}
-        </Row>
+        {filteredMovies.length > 0 ? (
+          <Row className="g-4">
+            {filteredMovies.map((movie) => (
+              <Col key={movie.id} sm={12} md={6} lg={4}>
+                <MovieCard 
+                  movie={movie} 
+                  showScore={false} 
+                  onClick={handleMovieClick}
+                />
+              </Col>
+            ))}
+          </Row>
+        ) : (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '4rem 2rem',
+            color: 'var(--text-muted)'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <h2 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>
+              No movies found
+            </h2>
+            <p>Try a different search term or browse all movies.</p>
+          </div>
+        )}
+
+        <MovieDetail 
+          movie={selectedMovie} 
+          show={showDetail} 
+          onHide={handleCloseDetail} 
+        />
       </Container>
     </>
   );
