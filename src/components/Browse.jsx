@@ -1,147 +1,183 @@
-import { useState, useMemo } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
-import { MOVIES, DATASET_INFO } from '../data/movies.js';
+import { Container, Row, Col, Form, InputGroup, Modal, Button } from 'react-bootstrap';
+import { useState, useEffect, useMemo } from "react";
 import MovieCard from './MovieCard.jsx';
-import MovieDetail from './MovieDetail.jsx';
-import SearchBar from './SearchBar.jsx';
+
+const ALL_CATEGORIES = ["Drama", "Comedy", "Romance", "Action", "Thriller", "Sci-Fi", "Horror", "Fantasy"];
 
 export default function Browse() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState(null);
 
-  const filteredMovies = useMemo(() => {
-    if (!searchTerm.trim()) return MOVIES;
-    const term = searchTerm.toLowerCase();
-    return MOVIES.filter(movie => 
-      movie.title.toLowerCase().includes(term) ||
-      movie.tags.some(tag => tag.toLowerCase().includes(term))
+  // --------------------------------------------------------
+  // INITIAL LOAD (Romance movies)
+  // --------------------------------------------------------
+  useEffect(() => {
+    async function loadMovies() {
+      try {
+        setLoading(true);
+
+        const resp = await fetch(
+          `https://www.omdbapi.com/?apikey=7ce293ef&s=romance&type=movie`
+        );
+        const data = await resp.json();
+
+        if (data.Response === "False") {
+          setError(data.Error);
+          setMovies([]);
+        } else {
+          const detailed = await Promise.all(
+            data.Search.map(async (m) => {
+              const full = await fetch(
+                `https://www.omdbapi.com/?apikey=7ce293ef&i=${m.imdbID}`
+              );
+              return await full.json();
+            })
+          );
+          setMovies(detailed);
+        }
+
+      } catch (err) {
+        setError("Network error while fetching movies.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadMovies();
+  }, []);
+
+  // --------------------------------------------------------
+  // SEARCH LOGIC
+  // --------------------------------------------------------
+  async function searchMovies(term) {
+    if (term.length < 3) return;
+
+    const resp = await fetch(
+      `https://www.omdbapi.com/?apikey=7ce293ef&s=${term}&type=movie`
     );
-  }, [searchTerm]);
+    const data = await resp.json();
 
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-  };
+    if (data.Response === "True") {
+      const detailed = await Promise.all(
+        data.Search.map(async (m) => {
+          const full = await fetch(
+            `https://www.omdbapi.com/?apikey=7ce293ef&i=${m.imdbID}`
+          );
+          return await full.json();
+        })
+      );
+      setMovies(detailed);
+    } else {
+      setMovies([]);
+    }
+  }
 
-  const handleMovieClick = (movie) => {
-    setSelectedMovie(movie);
-    setShowDetail(true);
-  };
+  // --------------------------------------------------------
+  // CATEGORY FILTER
+  // --------------------------------------------------------
+  const filteredMovies = useMemo(() => {
+    if (!categoryFilter) return movies;
 
-  const handleCloseDetail = () => {
-    setShowDetail(false);
-    setSelectedMovie(null);
-  };
-  const overlayStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'radial-gradient(circle at 30% 70%, rgba(0, 159, 253, 0.1) 0%, transparent 50%)',
-    pointerEvents: 'none',
-    zIndex: 0,
-    opacity: 0.4,
-  };
-
-  const containerStyle = {
-    position: 'relative',
-    zIndex: 1,
-    padding: '2rem',
-    minHeight: 'calc(100vh - 60px)',
-  };
-
-  const headerStyle = {
-    color: 'var(--text-primary)',
-    fontWeight: '700',
-    fontSize: '2.5rem',
-    textShadow: '0 0 20px rgba(0, 159, 253, 0.8)',
-    marginBottom: '0.5rem',
-    letterSpacing: '-0.02em',
-  };
-
-  const subtitleStyle = {
-    color: 'var(--text-secondary)',
-    fontSize: '1.1rem',
-    marginBottom: '2rem',
-    fontWeight: '400',
-  };
-
-  const statsStyle = {
-    background: 'rgba(35, 35, 41, 0.6)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(0, 159, 253, 0.3)',
-    borderRadius: '12px',
-    padding: '1rem 1.5rem',
-    marginBottom: '2rem',
-    display: 'inline-block',
-    color: 'var(--neon-blue)',
-    fontWeight: '600',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-  };
-
-  const dividerStyle = {
-    height: '2px',
-    background: 'linear-gradient(90deg, transparent 0%, var(--neon-blue) 50%, transparent 100%)',
-    border: 'none',
-    margin: '2rem 0',
-    opacity: '0.5',
-  };
+    return movies.filter(movie =>
+      movie.Genre?.toLowerCase().includes(categoryFilter.toLowerCase())
+    );
+  }, [movies, categoryFilter]);
 
   return (
     <>
-      <div style={overlayStyle}></div>
-      <Container style={containerStyle} className="cinematic-container">
-        <h1 style={headerStyle} className="neon-header">
-          Browse Collection
-        </h1>
-        <p style={subtitleStyle}>
-          Explore our handpicked selection of cinematic experiences
-        </p>
+      <Container style={{ padding: "2rem" }}>
 
-        <div style={statsStyle}>
-          📽️ {filteredMovies.length} {filteredMovies.length === MOVIES.length ? 'Films' : 'Results'} Available • {DATASET_INFO.moodCategories.length} Mood Categories
+        {/* Title */}
+        <h1 style={{ color: "white", fontWeight: 700 }}>Browse Collection</h1>
+
+        {/* Info + Category Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+          <span style={{ color: "#aaa", fontSize: "0.9rem" }}>
+            📽️ {movies.length} films loaded
+          </span>
+
+          <button
+            onClick={() => setShowModal(true)}
+            style={{
+              background: "linear-gradient(135deg, var(--neon-purple), var(--neon-blue))",
+              border: "none",
+              borderRadius: "12px",
+              padding: "0.6rem 1.1rem",
+              color: "var(--text-primary)",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            🎭 Mood Categories ({ALL_CATEGORIES.length})
+          </button>
         </div>
 
-        <div style={{ marginBottom: '2rem', maxWidth: '600px' }}>
-          <SearchBar onSearch={handleSearch} placeholder="Search by title or mood..." />
-        </div>
+        {/* Search Bar */}
+        <Form className="mb-4">
+          <InputGroup
+            style={{
+              background: "rgba(35, 35, 41, 0.7)",
+              border: "1px solid rgba(127, 90, 240, 0.4)",
+              borderRadius: "12px",
+            }}
+          >
+            <InputGroup.Text style={{ background: "transparent", border: "none", color: "var(--neon-purple)" }}>
+              🔍
+            </InputGroup.Text>
 
-        <hr style={dividerStyle} />
+            <Form.Control
+              type="text"
+              placeholder="Search titles..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                searchMovies(e.target.value);
+              }}
+              style={{ background: "transparent", border: "none", color: "white" }}
+            />
+          </InputGroup>
+        </Form>
 
-        {filteredMovies.length > 0 ? (
-          <Row className="g-4">
-            {filteredMovies.map((movie) => (
-              <Col key={movie.id} sm={12} md={6} lg={4}>
-                <MovieCard 
-                  movie={movie} 
-                  showScore={false} 
-                  onClick={handleMovieClick}
-                />
-              </Col>
-            ))}
-          </Row>
-        ) : (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '4rem 2rem',
-            color: 'var(--text-muted)'
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-            <h2 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>
-              No movies found
-            </h2>
-            <p>Try a different search term or browse all movies.</p>
-          </div>
-        )}
+        {/* Movie Grid */}
+        <Row className="g-4">
+          {filteredMovies.map((movie) => (
+            <Col key={movie.imdbID} sm={12} md={6} lg={4}>
+              <MovieCard movie={movie} />
+            </Col>
+          ))}
 
-        <MovieDetail 
-          movie={selectedMovie} 
-          show={showDetail} 
-          onHide={handleCloseDetail} 
-        />
+          {filteredMovies.length === 0 && (
+            <p style={{ color: "white", marginTop: "2rem" }}>No movies found.</p>
+          )}
+        </Row>
       </Container>
+
+      {/* Category Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Select a Mood Category</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="d-flex flex-wrap" style={{ gap: "0.5rem" }}>
+            {ALL_CATEGORIES.map(cat => (
+              <Button
+                key={cat}
+                variant="outline-primary"
+                onClick={() => {
+                  setCategoryFilter(cat);
+                  setShowModal(false);
+                }}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
+        </Modal.Body>
+      </Modal>
     </>
   );
 }
-

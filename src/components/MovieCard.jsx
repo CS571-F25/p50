@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Row, Col } from 'react-bootstrap';
 
 export default function MovieCard({ movie, showScore = false, onClick }) {
   const [imageError, setImageError] = useState(false);
@@ -81,62 +80,51 @@ export default function MovieCard({ movie, showScore = false, onClick }) {
     transition: 'all 0.3s ease',
   };
 
-  const handleClick = () => {
-    if (onClick) onClick(movie);
-  };
-
-  const handleKeyDown = (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && onClick) {
-      e.preventDefault();
-      onClick(movie);
-    }
-  };
+  // Convert IMDb genre string into an array
+  const genreTags = movie.Genre
+    ? movie.Genre.split(',').map(g => g.trim())
+    : [];
 
   return (
-    <Card 
-      className="movie-card h-100" 
-      style={cardStyle}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={onClick ? 0 : -1}
-      role={onClick ? "button" : undefined}
-      aria-label={onClick ? `View details for ${movie.title}` : undefined}
-    >
+    <Card className="movie-card h-100" style={cardStyle}>
       <Row className="g-0 h-100">
         <Col xs="auto">
           <Card.Img
-            src={imageSrc}
-            alt={`${movie.title} movie poster`}
+            src={movie.Poster !== "N/A" ? movie.Poster : "/placeholder.jpg"}
+            alt={`${movie.Title} movie poster`}
             style={posterStyle}
             loading="lazy"
             onError={handleImageError}
           />
         </Col>
+
         <Col>
           <Card.Body className="py-3 px-3">
+
             <div className="d-flex justify-content-between align-items-start mb-2">
               <Card.Title style={titleStyle} className="mb-0">
-                {movie.title}
+                {movie.Title}
               </Card.Title>
-              {showScore && (movie._score !== undefined || movie._similarity !== undefined) && (
-                <div style={scoreStyle} title={`Match: ${(movie._similarity * 100 || movie._score || 0).toFixed(1)}%`}>
-                  {movie._score !== undefined 
-                    ? movie._score.toFixed(1) 
-                    : (movie._similarity * 100).toFixed(1)}%
+
+              {showScore && movie._score !== undefined && (
+                <div style={scoreStyle}>
+                  {movie._score.toFixed(2)}
                 </div>
               )}
             </div>
+
+            {/* Genre tags */}
             <div className="mt-2">
-              {movie.tags.map((tag, index) => (
+              {genreTags.map((tag, index) => (
                 <span key={index} style={tagStyle} className="mood-tag">
                   {tag}
                 </span>
               ))}
             </div>
-          </Card.Body>
-        </Col>
-      </Row>
-    </Card>
+
+          </Card.Body >
+        </Col >
+      </Row >
+    </Card >
   );
 }
-

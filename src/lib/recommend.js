@@ -1,9 +1,10 @@
 export const DEFAULT_MOOD = {
   colors: new Set(),
   descriptors: new Set(),
-  intensity: 0.5, // 0..1
-  pacing: 0.5,    // 0..1
+  intensity: 0.5,   // default = 50%
+  pacing: 0.5       // default = 50%
 };
+
 
 const TAG_MAP = {
   cozy: ["cozy", "romantic", "light"],
@@ -58,7 +59,7 @@ export function rankByMood(movies, mood) {
       }
 
       // intensity & pacing similarity
-      if (typeof m.edge === "number")  score += (1 - Math.abs(m.edge - mood.intensity)) * 1.0;
+      if (typeof m.edge === "number") score += (1 - Math.abs(m.edge - mood.intensity)) * 1.0;
       if (typeof m.tempo === "number") score += (1 - Math.abs(m.tempo - mood.pacing)) * 1.0;
 
       return { ...m, _score: score };
