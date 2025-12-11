@@ -1,127 +1,105 @@
 import { Container, Row, Col, Form, InputGroup, Modal, Button } from 'react-bootstrap';
-import { MOVIES, DATASET_INFO } from '../data/movies.js';
+import { useState, useEffect, useMemo } from "react";
 import MovieCard from './MovieCard.jsx';
-import { useState, useMemo } from "react";
 
-// Extract mood categories directly from dataset
-const ALL_CATEGORIES = DATASET_INFO.moodCategories;
+const ALL_CATEGORIES = ["Drama", "Comedy", "Romance", "Action", "Thriller", "Sci-Fi", "Horror", "Fantasy"];
 
 export default function Browse() {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState(null);
 
-  const overlayStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'radial-gradient(circle at 30% 70%, rgba(0, 159, 253, 0.1) 0%, transparent 50%)',
-    pointerEvents: 'none',
-    zIndex: 0,
-    opacity: 0.4,
-  };
+  // --------------------------------------------------------
+  // INITIAL LOAD (Romance movies)
+  // --------------------------------------------------------
+  useEffect(() => {
+    async function loadMovies() {
+      try {
+        setLoading(true);
 
-  const containerStyle = {
-    position: 'relative',
-    zIndex: 1,
-    padding: '2rem',
-    minHeight: 'calc(100vh - 60px)',
-  };
+        const resp = await fetch(
+          `https://www.omdbapi.com/?apikey=7ce293ef&s=romance&type=movie`
+        );
+        const data = await resp.json();
 
-  const headerStyle = {
-    color: 'var(--text-primary)',
-    fontWeight: '700',
-    fontSize: '2.5rem',
-    textShadow: '0 0 20px rgba(0, 159, 253, 0.8)',
-    marginBottom: '0.5rem',
-    letterSpacing: '-0.02em',
-  };
+        if (data.Response === "False") {
+          setError(data.Error);
+          setMovies([]);
+        } else {
+          const detailed = await Promise.all(
+            data.Search.map(async (m) => {
+              const full = await fetch(
+                `https://www.omdbapi.com/?apikey=7ce293ef&i=${m.imdbID}`
+              );
+              return await full.json();
+            })
+          );
+          setMovies(detailed);
+        }
 
-  const subtitleStyle = {
-    color: 'var(--text-secondary)',
-    fontSize: '1.1rem',
-    marginBottom: '2rem',
-    fontWeight: '400',
-  };
+      } catch (err) {
+        setError("Network error while fetching movies.");
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const statsStyle = {
-    background: 'rgba(35, 35, 41, 0.6)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(0, 159, 253, 0.3)',
-    borderRadius: '12px',
-    padding: '1rem 1.5rem',
-    marginBottom: '2rem',
-    display: 'inline-block',
-    color: 'var(--neon-blue)',
-    fontWeight: '600',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-    cursor: "pointer",
-  };
+    loadMovies();
+  }, []);
 
-  const dividerStyle = {
-    height: '2px',
-    background: 'linear-gradient(90deg, transparent 0%, var(--neon-blue) 50%, transparent 100%)',
-    border: 'none',
-    margin: '2rem 0',
-    opacity: '0.5',
-  };
+  // --------------------------------------------------------
+  // SEARCH LOGIC
+  // --------------------------------------------------------
+  async function searchMovies(term) {
+    if (term.length < 3) return;
 
-  // -----------------------------
-  //        FILTERING LOGIC
-  // -----------------------------
+    const resp = await fetch(
+      `https://www.omdbapi.com/?apikey=7ce293ef&s=${term}&type=movie`
+    );
+    const data = await resp.json();
+
+    if (data.Response === "True") {
+      const detailed = await Promise.all(
+        data.Search.map(async (m) => {
+          const full = await fetch(
+            `https://www.omdbapi.com/?apikey=7ce293ef&i=${m.imdbID}`
+          );
+          return await full.json();
+        })
+      );
+      setMovies(detailed);
+    } else {
+      setMovies([]);
+    }
+  }
+
+  // --------------------------------------------------------
+  // CATEGORY FILTER
+  // --------------------------------------------------------
   const filteredMovies = useMemo(() => {
-    const lower = searchTerm.toLowerCase();
+    if (!categoryFilter) return movies;
 
-    return MOVIES.filter(movie => {
-      const matchesSearch =
-        movie.title.toLowerCase().includes(lower) ||
-        movie.tags.some(tag => tag.toLowerCase().includes(lower));
-
-      const matchesCategory =
-        categoryFilter ? movie.tags.includes(categoryFilter) : true;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchTerm, categoryFilter]);
+    return movies.filter(movie =>
+      movie.Genre?.toLowerCase().includes(categoryFilter.toLowerCase())
+    );
+  }, [movies, categoryFilter]);
 
   return (
     <>
-      <div style={overlayStyle}></div>
-      <Container style={containerStyle} className="cinematic-container">
+      <Container style={{ padding: "2rem" }}>
 
-        {/* Page Title */}
-        <h1 style={headerStyle} className="neon-header">
-          Browse Collection
-        </h1>
-        <p style={subtitleStyle}>
-          Explore our handpicked selection of cinematic experiences
-        </p>
+        {/* Title */}
+        <h1 style={{ color: "white", fontWeight: 700 }}>Browse Collection</h1>
 
-        {/* Info + Category Button Row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "2rem"
-          }}
-        >
-
-          {/* SUBTLE TEXT NOTE — NOT A BUTTON */}
-          <span
-            style={{
-              color: "var(--text-muted)",
-              fontSize: "0.9rem",
-              opacity: 0.8,
-              userSelect: "none"
-            }}
-          >
-            📽️ {MOVIES.length} films available
+        {/* Info + Category Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+          <span style={{ color: "#aaa", fontSize: "0.9rem" }}>
+            📽️ {movies.length} films loaded
           </span>
 
-          {/* CLEAR CLICKABLE BUTTON */}
           <button
             onClick={() => setShowModal(true)}
             style={{
@@ -131,117 +109,54 @@ export default function Browse() {
               padding: "0.6rem 1.1rem",
               color: "var(--text-primary)",
               fontWeight: "700",
-              fontSize: "0.95rem",
               cursor: "pointer",
-              boxShadow: "0 0 12px rgba(127, 90, 240, 0.5)",
-              transition: "all 0.3s ease",
-              textTransform: "capitalize"
             }}
           >
             🎭 Mood Categories ({ALL_CATEGORIES.length})
           </button>
-
         </div>
 
-
-
-        {/* DARK THEME SEARCH BAR */}
+        {/* Search Bar */}
         <Form className="mb-4">
-          <Form.Group controlId="searchMovies">
-            <Form.Label className="visually-hidden">Search movies</Form.Label>
+          <InputGroup
+            style={{
+              background: "rgba(35, 35, 41, 0.7)",
+              border: "1px solid rgba(127, 90, 240, 0.4)",
+              borderRadius: "12px",
+            }}
+          >
+            <InputGroup.Text style={{ background: "transparent", border: "none", color: "var(--neon-purple)" }}>
+              🔍
+            </InputGroup.Text>
 
-            <InputGroup
-              style={{
-                background: "rgba(35, 35, 41, 0.7)",
-                border: "1px solid rgba(127, 90, 240, 0.4)",
-                borderRadius: "12px",
-                boxShadow: "0 0 12px rgba(127, 90, 240, 0.2)",
-                overflow: "hidden",
-                backdropFilter: "blur(6px)",
+            <Form.Control
+              type="text"
+              placeholder="Search titles..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                searchMovies(e.target.value);
               }}
-            >
-              {/* Icon Box */}
-              <InputGroup.Text
-                style={{
-                  background: "rgba(26, 26, 36, 0.8)",
-                  border: "none",
-                  color: "var(--neon-purple)",
-                  fontSize: "1.2rem",
-                  padding: "0.6rem 0.9rem",
-                }}
-              >
-                🔍
-              </InputGroup.Text>
-
-              {/* Dark Input Field */}
-              <Form.Control
-                type="text"
-                placeholder="Search by title or vibe..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Search movies"
-                style={{
-                  background: "rgba(26, 26, 36, 0.8)",
-                  border: "none",
-                  color: "var(--text-primary)",
-                  padding: "0.75rem 1rem",
-                  fontSize: "1rem",
-                  boxShadow: "none",
-                }}
-              />
-
-            </InputGroup>
-          </Form.Group>
+              style={{ background: "transparent", border: "none", color: "white" }}
+            />
+          </InputGroup>
         </Form>
-
-
-        {/* CATEGORY FILTER TAG */}
-        {categoryFilter && (
-          <div style={{ marginBottom: "1rem", color: "var(--text-primary)" }}>
-            Filtering by:
-            <span
-              style={{
-                marginLeft: "0.5rem",
-                padding: "0.3rem 0.7rem",
-                background: "rgba(127, 90, 240, 0.3)",
-                borderRadius: "12px",
-                cursor: "pointer",
-              }}
-              onClick={() => setCategoryFilter(null)}
-            >
-              {categoryFilter} ❌
-            </span>
-          </div>
-        )}
-
-        <hr style={dividerStyle} />
 
         {/* Movie Grid */}
         <Row className="g-4">
           {filteredMovies.map((movie) => (
-            <Col key={movie.id} sm={12} md={6} lg={4}>
-              <MovieCard movie={movie} showScore={false} />
+            <Col key={movie.imdbID} sm={12} md={6} lg={4}>
+              <MovieCard movie={movie} />
             </Col>
           ))}
 
           {filteredMovies.length === 0 && (
-            <Col>
-              <div style={{
-                textAlign: "center",
-                padding: "3rem",
-                background: "rgba(35,35,41,0.4)",
-                borderRadius: "12px",
-                color: "var(--text-secondary)"
-              }}>
-                <h3 style={{ color: "var(--text-primary)" }}>No matches found</h3>
-                <p>Try another search term or remove filters.</p>
-              </div>
-            </Col>
+            <p style={{ color: "white", marginTop: "2rem" }}>No movies found.</p>
           )}
         </Row>
       </Container>
 
-      {/* CATEGORY POPUP MODAL */}
+      {/* Category Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Select a Mood Category</Modal.Title>
@@ -256,7 +171,6 @@ export default function Browse() {
                   setCategoryFilter(cat);
                   setShowModal(false);
                 }}
-                style={{ borderRadius: "20px", textTransform: "capitalize" }}
               >
                 {cat}
               </Button>

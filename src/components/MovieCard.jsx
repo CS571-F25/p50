@@ -1,4 +1,4 @@
-import { Card, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Row, Col } from 'react-bootstrap';
 
 export default function MovieCard({ movie, showScore = false }) {
   const cardStyle = {
@@ -53,42 +53,49 @@ export default function MovieCard({ movie, showScore = false }) {
     transition: 'all 0.3s ease',
   };
 
+  // Convert IMDb genre string into an array
+  const genreTags = movie.Genre
+    ? movie.Genre.split(',').map(g => g.trim())
+    : [];
+
   return (
-    <Card 
-      className="movie-card h-100" 
-      style={cardStyle}
-    >
+    <Card className="movie-card h-100" style={cardStyle}>
       <Row className="g-0 h-100">
         <Col xs="auto">
           <Card.Img
-            src={movie.poster}
-            alt={movie.title}
+            src={movie.Poster !== "N/A" ? movie.Poster : "/placeholder.jpg"}
+            alt={`${movie.Title} movie poster`}
             style={posterStyle}
           />
         </Col>
+
         <Col>
           <Card.Body className="py-3 px-3">
+
             <div className="d-flex justify-content-between align-items-start mb-2">
               <Card.Title style={titleStyle} className="mb-0">
-                {movie.title}
+                {movie.Title}
               </Card.Title>
+
               {showScore && movie._score !== undefined && (
                 <div style={scoreStyle}>
                   {movie._score.toFixed(2)}
                 </div>
               )}
             </div>
+
+            {/* Genre tags */}
             <div className="mt-2">
-              {movie.tags.map((tag, index) => (
+              {genreTags.map((tag, index) => (
                 <span key={index} style={tagStyle} className="mood-tag">
                   {tag}
                 </span>
               ))}
             </div>
+
           </Card.Body>
         </Col>
       </Row>
     </Card>
   );
 }
-

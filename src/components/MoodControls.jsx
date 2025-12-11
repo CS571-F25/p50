@@ -1,9 +1,10 @@
 import Chip from "./Chip.jsx";
 
-const COLORS = ["#FF6B6B","#F59E0B","#34D399","#60A5FA","#A78BFA","#F472B6","#9CA3AF"];
-const DESCRIPTORS = ["cozy","melancholic","upbeat","mysterious","gritty","surreal","romantic","dark comedy"];
+const COLORS = ["#FF6B6B", "#F59E0B", "#34D399", "#60A5FA", "#A78BFA", "#F472B6", "#9CA3AF"];
+const DESCRIPTORS = ["cozy", "melancholic", "upbeat", "mysterious", "gritty", "surreal", "romantic", "dark comedy"];
 
 export default function MoodControls({ mood, onChange }) {
+
   const toggleColor = (c) => {
     const next = new Set(mood.colors);
     next.has(c) ? next.delete(c) : next.add(c);
@@ -72,6 +73,7 @@ export default function MoodControls({ mood, onChange }) {
     textShadow: '0 0 8px rgba(0, 159, 253, 0.8)',
   };
 
+
   const dividerStyle = {
     height: '2px',
     background: 'linear-gradient(90deg, transparent 0%, var(--neon-purple) 50%, transparent 100%)',
@@ -83,7 +85,7 @@ export default function MoodControls({ mood, onChange }) {
   return (
     <div className="glass-panel" style={panelStyle}>
       <h3 style={sectionTitleStyle}>🎨 Mood Palette</h3>
-      
+
       <div style={sectionTitleStyle} className="mt-3">Colors</div>
       <div className="d-flex flex-wrap mb-3">
         {COLORS.map(c => (
@@ -104,11 +106,11 @@ export default function MoodControls({ mood, onChange }) {
       <div style={sectionTitleStyle}>Vibes</div>
       <div className="d-flex flex-wrap mb-3">
         {DESCRIPTORS.map(d => (
-          <Chip 
-            key={d} 
-            label={d} 
-            selected={mood.descriptors.has(d)} 
-            onClick={() => toggleDesc(d)} 
+          <Chip
+            key={d}
+            label={d}
+            selected={mood.descriptors.has(d)}
+            onClick={() => toggleDesc(d)}
           />
         ))}
       </div>
@@ -119,14 +121,15 @@ export default function MoodControls({ mood, onChange }) {
         <div className="col-md-6 mb-3" style={sliderContainerStyle}>
           <label className="form-label" style={sliderLabelStyle}>
             <span>⚡ Intensity</span>
-            <span style={sliderValueStyle}>{(mood.intensity * 100).toFixed(0)}%</span>
+            <span style={sliderValueStyle}>{(((mood.intensity ?? 0.5) * 100)).toFixed(0)}%</span>
+
           </label>
           <input
-            type="range" 
-            min="0" 
-            max="1" 
+            type="range"
+            min="0"
+            max="1"
             step="0.01"
-            value={mood.intensity}
+            value={mood.intensity ?? 0.5}
             className="form-range"
             onChange={(e) => onChange({ ...mood, intensity: Number(e.target.value) })}
             style={{ cursor: 'pointer' }}
@@ -135,14 +138,15 @@ export default function MoodControls({ mood, onChange }) {
         <div className="col-md-6 mb-3" style={sliderContainerStyle}>
           <label className="form-label" style={sliderLabelStyle}>
             <span>🎬 Pacing</span>
-            <span style={sliderValueStyle}>{(mood.pacing * 100).toFixed(0)}%</span>
+            <span style={sliderValueStyle}>{(((mood.pacing ?? 0.5) * 100)).toFixed(0)}%</span>
+
           </label>
           <input
-            type="range" 
-            min="0" 
-            max="1" 
+            type="range"
+            min="0"
+            max="1"
             step="0.01"
-            value={mood.pacing}
+            value={mood.pacing ?? 0.5}
             className="form-range"
             onChange={(e) => onChange({ ...mood, pacing: Number(e.target.value) })}
             style={{ cursor: 'pointer' }}
